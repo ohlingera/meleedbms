@@ -1,5 +1,9 @@
 READ ME:
 
+ADDITIONAL NOTE ADDED 4/20/17:
+Added triggers to the database which will not allow invalid numbers to be entered for several data fields.  Corrected a couple of incorrectly entered pieces of
+data that I spotted going through the tables.  Nothing really big has chnaged here since the last grading other than those two things.
+
 About this Super Smash Bros. Melee Database:
 For a full overview of each entity and relation, please see the document I handed in with Phase 1.  The following are some additional notes to clarify a couple
 changes I have made, some documentation of my data selection methods, and some tips to help the grader understand exactly what’s going on.
@@ -54,12 +58,13 @@ I were to start another project, I would have a better idea of how exactly to de
 
 
 
+
 -- phpMyAdmin SQL Dump
 -- version 4.6.4
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Mar 29, 2017 at 04:19 AM
+-- Generation Time: Apr 20, 2017 at 10:34 PM
 -- Server version: 5.7.14
 -- PHP Version: 5.6.25
 
@@ -1076,6 +1081,21 @@ INSERT INTO `attends` (`Tag`, `Tourney_Name`, `Place`) VALUES
 ('Zoma', 'Super Smash Con 2016', 33),
 ('ZoSo', 'The Big House 5', 49);
 
+--
+-- Triggers `attends`
+--
+DELIMITER $$
+CREATE TRIGGER `PlaceLessThan1` BEFORE INSERT ON `attends` FOR EACH ROW BEGIN
+DECLARE msg varchar(255);
+IF (NEW.Place<1)
+THEN
+SET msg=concat('check constraint- place should not be less than 1 violated as place in the entry is ',cast(NEW.Place as char));
+SIGNAL sqlstate 'CK001' SET message_text=msg;
+END IF;
+End
+$$
+DELIMITER ;
+
 -- --------------------------------------------------------
 
 --
@@ -1120,6 +1140,32 @@ INSERT INTO `game_character` (`Character_Name`, `Franchise`, `Rank`, `Tier`) VAL
 ('Yoshi', 'Mario Bros.', 12, 'D'),
 ('Young Link', 'Legend of Zelda', 16, 'E'),
 ('Zelda', 'Legend of Zelda', 22, 'F');
+
+--
+-- Triggers `game_character`
+--
+DELIMITER $$
+CREATE TRIGGER `CharRankGreaterThan26` BEFORE INSERT ON `game_character` FOR EACH ROW BEGIN
+DECLARE msg varchar(255);
+IF (NEW.Rank>26)
+THEN
+SET msg=concat('check constraint- rank should not be greater than 26 violated as rank in the entry is ',cast(NEW.Rank as char));
+SIGNAL sqlstate 'CK001' SET message_text=msg;
+END IF;
+End
+$$
+DELIMITER ;
+DELIMITER $$
+CREATE TRIGGER `CharRankLessThan1` BEFORE INSERT ON `game_character` FOR EACH ROW BEGIN
+DECLARE msg varchar(255);
+IF (NEW.Rank<1)
+THEN
+SET msg=concat('check constraint- rank should not be less than 1 violated as rank in the entry is ',cast(NEW.Rank as char));
+SIGNAL sqlstate 'CK001' SET message_text=msg;
+END IF;
+End
+$$
+DELIMITER ;
 
 -- --------------------------------------------------------
 
@@ -1648,7 +1694,7 @@ INSERT INTO `player` (`Tag`, `Player_Name`, `Region`, `City`, `State_Province_Co
 ('DJ Nintendo', 'Hendrick Pilar', 'Tri-State', 'New York City', 'New York'),
 ('DoH', 'Landon Cox', 'MD/VA', 'Washington, D.C.', 'District of Columbia'),
 ('Doll', NULL, 'MD/VA', NULL, 'Maryland'),
-('Drephen', 'Drew Scoles', 'Midwest', 'Colombus', 'Ohio'),
+('Drephen', 'Drew Scoles', 'Midwest', 'Columbus', 'Ohio'),
 ('DruggedFox', 'Sami Muhanna', 'Southeast', 'Atlanta', 'Georgia'),
 ('Drunk Sloth', 'Jay Dahya', 'Florida', 'Orlando', 'Florida'),
 ('Duck', 'James Ma', 'Midwest', 'Ann Arbor', 'Michigan'),
@@ -1656,7 +1702,7 @@ INSERT INTO `player` (`Tag`, `Player_Name`, `Region`, `City`, `State_Province_Co
 ('Eddy Mexico', 'Eduardo Lucatero Rincon', 'Mexico', 'Tijuana', 'Baja California'),
 ('Eggm', 'Timothy Cody', 'Tri-State', 'Wall Township', 'New Jersey'),
 ('Eggz', 'Shane Walter Johns', 'Northwest', 'Portland', 'Oregon'),
-('Eikelmann', 'Ian Mooney', 'Northwest', 'Denver', 'Colorado'),
+('Eikelmann', 'Ian Mooney', 'Mountain West', 'Denver', 'Colorado'),
 ('EMT_Sol', 'Tim Lena', 'Tri-State', NULL, 'New York'),
 ('Equal', NULL, 'Tri-State', 'New York City', 'New York'),
 ('ESAM', 'Eric Lew', 'Florida', 'Miami', 'Florida'),
@@ -1669,7 +1715,7 @@ INSERT INTO `player` (`Tag`, `Player_Name`, `Region`, `City`, `State_Province_Co
 ('Frootloop', 'Frank Borden', 'NorCal', 'San Francisco', 'California'),
 ('Frycook', 'Alec Brion', 'Tri-State', 'Newark', 'New Jersey'),
 ('Fuzzyness', 'Charles Kimmelman', 'Europe', 'London', 'England'),
-('G$', 'Gordon Connell', 'Tri-State', 'New York', 'New York City'),
+('G$', 'Gordon Connell', 'Tri-State', 'New York City', 'New York'),
 ('Gahtzu', 'Jason Diehl', 'Florida', 'Orlando', 'Florida'),
 ('gaR', 'Ivan Van', 'NorCal', 'San Francisco', 'California'),
 ('Ginger', 'Avery Wilson', 'Midwest', 'Brighton', 'Michigan'),
@@ -2290,7 +2336,36 @@ INSERT INTO `ranked_in` (`Tag`, `Year`, `Rank`) VALUES
 -- Triggers `ranked_in`
 --
 DELIMITER $$
-CREATE TRIGGER `RankLessThan1` BEFORE INSERT ON `ranked_in` FOR EACH ROW UPDATE `ranked_in` SET `Rank`=`This should be more than 1` WHERE `Tag`=NEW.Tag AND `Rank`< 1
+CREATE TRIGGER `RankGreaterThan100` BEFORE INSERT ON `ranked_in` FOR EACH ROW BEGIN
+DECLARE msg varchar(255);
+IF (NEW.Rank>100)
+THEN
+SET msg=concat('check constraint- rank should not be greater than 100 violated as rank in the entry is ',cast(NEW.Rank as char));
+SIGNAL sqlstate 'CK001' SET message_text=msg;
+END IF;
+End
+$$
+DELIMITER ;
+DELIMITER $$
+CREATE TRIGGER `RankLessThan1` BEFORE INSERT ON `ranked_in` FOR EACH ROW BEGIN
+DECLARE msg varchar(255);
+IF (NEW.Rank<1)
+THEN
+SET msg=concat('check constraint- rank should not be less than 1 violated as rank in the entry is ',cast(NEW.Rank as char));
+SIGNAL sqlstate 'CK001' SET message_text=msg;
+END IF;
+End
+$$
+DELIMITER ;
+DELIMITER $$
+CREATE TRIGGER `YearLessThan2013` BEFORE INSERT ON `ranked_in` FOR EACH ROW BEGIN
+DECLARE msg varchar(255);
+IF (NEW.Year<2013)
+THEN
+SET msg=concat('check constraint- year should not be less than 2013 violated as year in the entry is ',cast(NEW.Year as char));
+SIGNAL sqlstate 'CK001' SET message_text=msg;
+END IF;
+End
 $$
 DELIMITER ;
 
@@ -2421,6 +2496,21 @@ INSERT INTO `tournament` (`Tourney_Name`, `Date`, `Total_Entrants`, `Region`, `C
 ('WTFox 2', '2016-07-03', 292, 'Southeast', 'Memphis', 'Tennessee');
 
 --
+-- Triggers `tournament`
+--
+DELIMITER $$
+CREATE TRIGGER `TotalEntrantsLessThan2` BEFORE INSERT ON `tournament` FOR EACH ROW BEGIN
+DECLARE msg varchar(255);
+IF (NEW.Total_Entrants<2)
+THEN
+SET msg=concat('check constraint- Total_Entrants should not be less than 2 violated as Total_Entrants in the entry is ',cast(NEW.Total_Entrants as char));
+SIGNAL sqlstate 'CK001' SET message_text=msg;
+END IF;
+End
+$$
+DELIMITER ;
+
+--
 -- Indexes for dumped tables
 --
 
@@ -2517,6 +2607,9 @@ ALTER TABLE `ranked_in`
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+
+
+
 
 
 
